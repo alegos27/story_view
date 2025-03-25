@@ -68,9 +68,9 @@ class StoryItem {
     Duration? duration,
   }) {
     double contrast = ContrastHelper.contrast([
-      backgroundColor.red,
-      backgroundColor.green,
-      backgroundColor.blue,
+      backgroundColor.r,
+      backgroundColor.g,
+      backgroundColor.b,
     ], [
       255,
       255,
@@ -452,6 +452,9 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
   StreamSubscription<PlaybackState>? _playbackSubscription;
 
   VerticalDragInfo? verticalDragInfo;
+  
+  // Track when the current story started displaying
+  DateTime? _currentStoryStartTime;
 
   StoryItem? get _currentStory {
     return widget.storyItems.firstWhereOrNull((it) => !it!.shown);
@@ -534,6 +537,9 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
     })!;
 
     final storyItemIndex = widget.storyItems.indexOf(storyItem);
+
+    // Record the start time of the current story
+    _currentStoryStartTime = DateTime.now();
 
     if (widget.onStoryShow != null) {
       widget.onStoryShow!(storyItem, storyItemIndex);
@@ -619,6 +625,15 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
           .animateTo(1.0, duration: Duration(milliseconds: 10));
     }
   }
+  
+  // Check if 4 seconds have passed since the current story started
+  bool _canGoForward() {
+    if (_currentStoryStartTime == null) return false;
+    
+    final now = DateTime.now();
+    final difference = now.difference(_currentStoryStartTime!);
+    return difference.inSeconds >= 4;
+  }
 
   void _clearDebouncer() {
     _nextDebouncer?.cancel();
@@ -687,7 +702,10 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
                       if (_currentStory?.fixed ?? false) {
                         return;
                       }
-                      widget.controller.next();
+                      // Only allow going forward if 4 seconds have passed
+                      if (_canGoForward()) {
+                        widget.controller.next();
+                      }
                     }
                   },
                   onVerticalDragStart: widget.onVerticalSwipeComplete == null
@@ -849,11 +867,11 @@ class StoryProgressIndicator extends StatelessWidget {
         this.indicatorHeight,
       ),
       foregroundPainter: IndicatorOval(
-        this.indicatorForegroundColor ?? Colors.white.withOpacity(0.8),
+        this.indicatorForegroundColor ?? Colors.white.withValues(alpha: 0.8),
         this.value,
       ),
       painter: IndicatorOval(
-        this.indicatorColor ?? Colors.white.withOpacity(0.4),
+        this.indicatorColor ?? Colors.white.withValues(alpha: 0.4),
         1.0,
       ),
     );
