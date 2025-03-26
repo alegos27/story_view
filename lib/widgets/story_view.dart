@@ -423,6 +423,9 @@ class StoryView extends StatefulWidget {
   /// Use this if you want to give outer padding to the indicator
   final EdgeInsetsGeometry indicatorOuterPadding;
 
+  /// The delay (in seconds) before the timer can go to the next page
+  final int timerCanGoNextDelay;
+
   StoryView({
     required this.storyItems,
     required this.controller,
@@ -436,6 +439,7 @@ class StoryView extends StatefulWidget {
     this.indicatorForegroundColor,
     this.indicatorHeight = IndicatorHeight.large,
     this.indicatorOuterPadding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8,),
+    this.timerCanGoNextDelay = 4,
   });
 
   @override
@@ -632,7 +636,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
     
     final now = DateTime.now();
     final difference = now.difference(_currentStoryStartTime!);
-    return difference.inSeconds >= 4;
+    return difference.inSeconds >= widget.timerCanGoNextDelay;
   }
 
   void _clearDebouncer() {
@@ -705,6 +709,8 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
                       // Only allow going forward if 4 seconds have passed
                       if (_canGoForward()) {
                         widget.controller.next();
+                      } else {
+                        widget.controller.play();
                       }
                     }
                   },
