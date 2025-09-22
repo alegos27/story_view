@@ -630,13 +630,21 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
     }
   }
   
-  // Check if 4 seconds have passed since the current story started
+  // Check if enough animation progress has been made to allow going forward
   bool _canGoForward() {
-    if (_currentStoryStartTime == null) return false;
+    if (_currentAnimation == null || _currentStory == null) return false;
     
-    final now = DateTime.now();
-    final difference = now.difference(_currentStoryStartTime!);
-    return difference.inSeconds >= widget.timerCanGoNextDelay;
+    // Calculate required progress based on delay vs total duration
+    // If delay is 4s and story duration is 10s, we need 40% progress (0.4)
+    final totalDurationSeconds = _currentStory!.duration.inSeconds;
+    if (totalDurationSeconds <= 0) return true; // Avoid division by zero
+    
+    final requiredProgress = widget.timerCanGoNextDelay / totalDurationSeconds;
+    
+    // Clamp to ensure we don't require more than 100% progress
+    final clampedRequiredProgress = requiredProgress.clamp(0.0, 1.0);
+    
+    return _currentAnimation!.value >= clampedRequiredProgress;
   }
 
   void _clearDebouncer() {
